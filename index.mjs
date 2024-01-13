@@ -3,6 +3,12 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import Bluebird from 'bluebird';
 import inquirer from 'inquirer';
+import { promisify } from 'util';
+
+const writeFileAsync = promisify(fs.writeFile);
+const readFileAsync = promisify(fs.readFile);
+const renameAsync = promisify(fs.rename);
+const rmAsync = promisify(fs.rm);
 
 dotenv.config();
 
@@ -10,15 +16,10 @@ const ig = new IgApiClient();
 
 (async () => {
     await checkenv();
-    main();
-})();
-
-
-async function main() {
     await login();
     await getFollowers();
     await compare();
-}
+})();
 
 async function checkenv() {
     const check = fs.existsSync('.env');
@@ -55,30 +56,33 @@ async function getAllItemsFromFeed(feed) {
 
 async function remove() {
     if (fs.existsSync('history.txt')) {
-        fs.rm('history.txt', (err) => {
+        rmAsync('history.txt', (err) => {
             if (err) {
                 console.error(err)
-                return
             }
         })
     }
+}
+
+async function rename() {
     if (fs.existsSync('followers.txt')) {
-        fs.rename(`followers.txt`, 'history.txt', function (err) {
+        renameAsync(`followers.txt`, 'history.txt', function (err) {
             if (err) throw err;
-            console.log('followers.txt was renamed to history.txt successfully!');
+            console.log('\nfollowers.txt was renamed to history.txt successfully!');
         });
     }
 }
-
 async function getFollowers() {
-    remove();
+    await remove();
+    await rename();
+
     const followersFeed = ig.feed.accountFollowers(ig.state.cookieUserId);
     console.log('\nGetting followers...');
     const followers = await getAllItemsFromFeed(followersFeed);
     // Making a new map of users username that follow you.
     const followersUsername = new Set(followers.map(({ username }) => username));
     // Save the usernames to a text file with the current date appended to the filename
-    fs.writeFile(`followers.txt`, Array.from(followersUsername).join('\n'), (err) => {
+    writeFileAsync(`followers.txt`, Array.from(followersUsername).join('\n'), (err) => {
         if (err) throw err;
         console.log(`\nUsernames of followers saved to followers.txt`);
     });
@@ -119,38 +123,46 @@ async function login() {
 async function compare() {
     console.log('Comparing followers...');
     if (fs.existsSync('history.txt')) {
+
         const history = fs.readFileSync('history.txt', 'utf8').split('\n');
         const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
+
         const unfollowers = history.filter(x => !followers.includes(x));
-        if (unfollowers.length === 0) {
-            console.log('No unfollowers.');
-        } else {
-            console.log('Unfollowers:\n' + unfollowers);
-        }
         const newFollowers = followers.filter(x => !history.includes(x));
-        if (newFollowers.length === 0) {
-            console.log('No new followers.');
-        } else {
-            console.log('New Followers:\n' + newFollowers);
+
+        if (unfollowers.length === 0) {
+            unfollowers.push('No new unfollowers.');
         }
+        if (newFollowers.length === 0) {
+            newFollowers.push('No new followers.');
+        }
+
         console.log('\nSaving unfollowers and new followers');
 
-        const date = new Date().toISOString().slice(0, 10);
-        const time = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
-        const datetime = date + ' ' + time;
-
-        fs.writeFile(`unfollowers-as-of-${datetime}.txt`, unfollowers.join('\n'), (err) => {
-            if (err) throw err;
-            console.log(`\nUsernames of unfollowers saved to unfollowers-as-of-${datetime}.txt`);
-        });
-        fs.writeFile(`newfollowers-as-of-${datetime}.txt`, newFollowers.join('\n'), (err) => {
-            if (err) throw err;
-            console.log(`\nUsernames of new followers saved to newfollowers-as-of-${datetime}.txt`);
-        });
-        console.log('\nExiting...');
-        process.exit();
+        await save(unfollowers, newFollowers);
     } else {
         console.log('Cannot compare followers. No history.txt file found. Exiting...');
         process.exit();
+    }
+}
+
+async function save(unfollowers, newFollowers){
+    const date = new Date().toISOString().slice(0, 10);
+    const time = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
+    const datetime = date + '_' + time;
+
+    const unf_dir = 'unfollowers'; 
+    fs.mkdirSync(unf_dir, { recursive: true });
+    const f_dir = 'newfollowers'; 
+    fs.mkdirSync(f_dir, { recursive: true })
+
+    try {
+        await writeFileAsync(`${unf_dir}/unfollowers-as-of-${datetime}.txt`, unfollowers.join('\n'));
+        console.log(`Usernames of unfollowers saved to ${unf_dir}/unfollowers-as-of-${datetime}.txt`);
+
+        await writeFileAsync(`${f_dir}/newfollowers-as-of-${datetime}.txt`, newFollowers.join('\n'));
+        console.log(`Usernames of new followers saved to ${f_dir}/newfollowers-as-of-${datetime}.txt`);
+    } catch (err) {
+        console.error('Error saving files:', err);
     }
 }
