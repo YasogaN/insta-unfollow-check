@@ -72,6 +72,7 @@ async function remove() {
 async function getFollowers() {
     remove();
     const followersFeed = ig.feed.accountFollowers(ig.state.cookieUserId);
+    console.log('Getting followers...');
     const followers = await getAllItemsFromFeed(followersFeed);
     // Making a new map of users username that follow you.
     const followersUsername = new Set(followers.map(({ username }) => username));
@@ -108,4 +109,14 @@ async function login() {
                 trustThisDevice: '1', // Can be omitted as '1' is used by default
             });
         })
+        .then(async loggedInUser => {
+            console.log(`Logged in successfully as ${loggedInUser.username} (${loggedInUser.full_name})`);
+        });
+}
+
+async function compare(){
+    const history = fs.readFileSync('history.txt', 'utf8').split('\n');
+    const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
+    const unfollowers = history.filter(x => !followers.includes(x));
+    console.log(unfollowers);
 }
