@@ -65,7 +65,7 @@ async function remove() {
     if (fs.existsSync('followers.txt')) {
         fs.rename(`followers.txt`, 'history.txt', function (err) {
             if (err) throw err;
-            console.log('File Renamed!');
+            console.log('Followers.txt was renamed to history.txt successfully!');
         });
     }
 }
