@@ -4,8 +4,7 @@
   "description": "An nodejs app to check who unfollowed you on instagram",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "mocha test/**/*.js"
+    "start": "node index.mjs"
   },
   "repository": {
     "type": "git",
