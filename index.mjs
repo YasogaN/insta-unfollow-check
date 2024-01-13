@@ -6,7 +6,6 @@ import inquirer from 'inquirer';
 import { promisify } from 'util';
 
 const writeFileAsync = promisify(fs.writeFile);
-const readFileAsync = promisify(fs.readFile);
 const renameAsync = promisify(fs.rename);
 const rmAsync = promisify(fs.rm);
 
