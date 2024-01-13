@@ -5,5 +5,5 @@ package-lock.json
 .env
 history.txt
 followers.txt
-unfollowers*.txt
-newfollowers*.txt
+unfollowers
+newfollowers
