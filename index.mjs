@@ -17,6 +17,7 @@ const ig = new IgApiClient();
 async function main() {
     await login();
     await getFollowers();
+    await compare();
 }
 
 async function checkenv() {
@@ -115,8 +116,13 @@ async function login() {
 }
 
 async function compare(){
+    console.log('Comparing followers...');
     const history = fs.readFileSync('history.txt', 'utf8').split('\n');
     const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
     const unfollowers = history.filter(x => !followers.includes(x));
-    console.log(unfollowers);
+    const newFollowers = followers.filter(x => !history.includes(x));
+    console.log('Unfollowers:\n'+unfollowers);
+    console.log('New Followers:\n'+newFollowers);
+    console.log('\nExiting...');
+    process.exit();
 }
