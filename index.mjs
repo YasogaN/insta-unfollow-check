@@ -18,6 +18,7 @@ const ig = new IgApiClient();
     await login();
     await getFollowers();
     await compare();
+    await rename();
 })();
 
 async function checkenv() {
@@ -55,7 +56,7 @@ async function getAllItemsFromFeed(feed) {
 
 async function remove() {
     if (fs.existsSync('history.txt')) {
-        rmAsync('history.txt', (err) => {
+        await rmAsync('history.txt', (err) => {
             if (err) {
                 console.error(err)
             }
@@ -65,23 +66,19 @@ async function remove() {
 
 async function rename() {
     if (fs.existsSync('followers.txt')) {
-        renameAsync(`followers.txt`, 'history.txt', function (err) {
-            if (err) throw err;
-            console.log('\nfollowers.txt was renamed to history.txt successfully!');
-        });
+        await renameAsync(`followers.txt`, 'history.txt');
+        console.log('\nfollowers.txt was renamed to history.txt successfully!');
     }
 }
-async function getFollowers() {
-    await remove();
-    await rename();
 
+async function getFollowers() {
     const followersFeed = ig.feed.accountFollowers(ig.state.cookieUserId);
     console.log('\nGetting followers...');
     const followers = await getAllItemsFromFeed(followersFeed);
     // Making a new map of users username that follow you.
     const followersUsername = new Set(followers.map(({ username }) => username));
     // Save the usernames to a text file with the current date appended to the filename
-    writeFileAsync(`followers.txt`, Array.from(followersUsername).join('\n'), (err) => {
+    await writeFileAsync(`followers.txt`, Array.from(followersUsername).join('\n'), (err) => {
         if (err) throw err;
         console.log(`\nUsernames of followers saved to followers.txt`);
     });
@@ -141,7 +138,6 @@ async function compare() {
         await save(unfollowers, newFollowers);
     } else {
         console.log('Cannot compare followers. No history.txt file found. Exiting...');
-        process.exit();
     }
 }
 
