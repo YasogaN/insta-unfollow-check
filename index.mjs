@@ -65,7 +65,7 @@ async function remove() {
     if (fs.existsSync('followers.txt')) {
         fs.rename(`followers.txt`, 'history.txt', function (err) {
             if (err) throw err;
-            console.log('Followers.txt was renamed to history.txt successfully!');
+            console.log('followers.txt was renamed to history.txt successfully!');
         });
     }
 }
@@ -73,14 +73,14 @@ async function remove() {
 async function getFollowers() {
     remove();
     const followersFeed = ig.feed.accountFollowers(ig.state.cookieUserId);
-    console.log('Getting followers...');
+    console.log('\nGetting followers...');
     const followers = await getAllItemsFromFeed(followersFeed);
     // Making a new map of users username that follow you.
     const followersUsername = new Set(followers.map(({ username }) => username));
     // Save the usernames to a text file with the current date appended to the filename
     fs.writeFile(`followers.txt`, Array.from(followersUsername).join('\n'), (err) => {
         if (err) throw err;
-        console.log(`Usernames of followers saved to followers.txt`);
+        console.log(`\nUsernames of followers saved to followers.txt`);
     });
 }
 
@@ -94,6 +94,7 @@ async function login() {
             const verificationMethod = totp_two_factor_on ? '0' : '1'; // default to 1 for SMS
             // At this point a code should have been sent
             // Get the code
+            console.log(''); // new line
             const { code } = await inquirer.prompt([
                 {
                     type: 'input',
@@ -115,14 +116,41 @@ async function login() {
         });
 }
 
-async function compare(){
+async function compare() {
     console.log('Comparing followers...');
-    const history = fs.readFileSync('history.txt', 'utf8').split('\n');
-    const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
-    const unfollowers = history.filter(x => !followers.includes(x));
-    const newFollowers = followers.filter(x => !history.includes(x));
-    console.log('Unfollowers:\n'+unfollowers);
-    console.log('New Followers:\n'+newFollowers);
-    console.log('\nExiting...');
-    process.exit();
+    if (fs.existsSync('history.txt')) {
+        console.log('Cannot compare followers. No history.txt file found. Exiting...');
+        process.exit();
+    } else {
+        const history = fs.readFileSync('history.txt', 'utf8').split('\n');
+        const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
+        const unfollowers = history.filter(x => !followers.includes(x));
+        if (unfollowers.length === 0) {
+            console.log('No unfollowers.');
+        } else {
+            console.log('Unfollowers:\n' + unfollowers);
+        }
+        const newFollowers = followers.filter(x => !history.includes(x));
+        if (newFollowers.length === 0) {
+            console.log('No new followers.');
+        } else {
+            console.log('New Followers:\n' + newFollowers);
+        }
+        console.log('\nSaving unfollowers and new followers');
+
+        const date = new Date().toISOString().slice(0, 10);
+        const time = new Date().toISOString().slice(11, 19).replace(/:/g, '-');
+        const datetime = date + ' ' + time;
+
+        fs.writeFile(`unfollowers-as-of-${datetime}.txt`, unfollowers.join('\n'), (err) => {
+            if (err) throw err;
+            console.log(`\nUsernames of unfollowers saved to unfollowers-as-of-${datetime}.txt`);
+        });
+        fs.writeFile(`newfollowers-as-of-${datetime}.txt`, newFollowers.join('\n'), (err) => {
+            if (err) throw err;
+            console.log(`\nUsernames of new followers saved to newfollowers-as-of-${datetime}.txt`);
+        });
+        console.log('\nExiting...');
+        process.exit();
+    }
 }
