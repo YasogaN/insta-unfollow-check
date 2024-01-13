@@ -13,13 +13,15 @@ dotenv.config();
 
 const ig = new IgApiClient();
 
-(async () => {
+main();
+
+async function main() {
     await checkenv();
     await login();
     await getFollowers();
     await compare();
     await rename();
-})();
+};
 
 async function checkenv() {
     const check = fs.existsSync('.env');
