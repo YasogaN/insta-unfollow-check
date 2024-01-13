@@ -119,9 +119,6 @@ async function login() {
 async function compare() {
     console.log('Comparing followers...');
     if (fs.existsSync('history.txt')) {
-        console.log('Cannot compare followers. No history.txt file found. Exiting...');
-        process.exit();
-    } else {
         const history = fs.readFileSync('history.txt', 'utf8').split('\n');
         const followers = fs.readFileSync('followers.txt', 'utf8').split('\n');
         const unfollowers = history.filter(x => !followers.includes(x));
@@ -151,6 +148,9 @@ async function compare() {
             console.log(`\nUsernames of new followers saved to newfollowers-as-of-${datetime}.txt`);
         });
         console.log('\nExiting...');
+        process.exit();
+    } else {
+        console.log('Cannot compare followers. No history.txt file found. Exiting...');
         process.exit();
     }
 }
